@@ -1,15 +1,13 @@
 import { defineConfig } from "drizzle-kit";
 
+// `drizzle-kit generate` only diffs the schema and needs no connection, so
+// credentials are optional here. Commands that talk to the database
+// (migrate, push) still require DATABASE_URL to be set.
 const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is required to run drizzle commands");
-}
 
 export default defineConfig({
   schema: "./drizzle/schema.ts",
   out: "./drizzle",
   dialect: "mysql",
-  dbCredentials: {
-    url: connectionString,
-  },
+  ...(connectionString ? { dbCredentials: { url: connectionString } } : {}),
 });

@@ -53,3 +53,7 @@ NOVA PULSE stays inside the additional ₹25 lakh / six-month envelope by reusin
 ## Judge-ready submission upgrade
 
 The final submission layer adds an executive **Start Judge Demo** mode that guides a judge through business problem, customer risk, root cause, recommended intervention, store action, order resolution, and impact measurement. The navigation now includes an **Impact** page with KPI baselines, pilot targets, mechanisms, treatment-vs-control design, and measurement criteria. AI Insights exposes an **Analyze with AI** action with a deterministic fallback that explicitly says “Based on available case data...” when no external AI service is available. Root-cause nodes now follow Customer → Order → Product → Inventory → Store → Delivery → Support → Retention Risk, and Operations exposes a lightweight activity timeline. Intervention copy is root-cause dependent: availability, delivery, store capacity, support, or targeted incentive.
+
+## Final competition upgrade
+
+Start Judge Demo now navigates directly to the Priya Sharma rescue workspace before opening the guided executive investigation. AI Insights now includes an always-visible **AI Rescue Analysis** panel with prototype risk 82/100, HIGH priority, 87% prototype confidence, stale inventory as the primary root cause, four supporting signals, evidence-grounded explanation, a concrete replacement/update/notify/monitor intervention, and repeat purchase plus secondary KPI framing.

@@ -22,6 +22,14 @@ export type Customer = {
   segment: string;
 };
 
+export type RiskBand = "LOW" | "MEDIUM" | "HIGH";
+export type RiskComponent = { label: string; weight: number; score: number; detail: string };
+export type RiskAssessment = { score: number; level: RiskBand; components: RiskComponent[]; drivers: RiskComponent[] };
+export type RootCauseNode = { label: string; value: string; meta: string; tone: "amber" | "coral" | "mint" };
+export type AIInsight = { id: number; tag: string; title: string; evidence: string; implication: string; action: string };
+export type ScenarioInput = { promo: number; delivery: number; cancellation: number; inventory: number; retention: number };
+export type Intervention = { id: string; customerId: string; orderId: string; storeId: string; category: string; status: "recommended" | "actioned" | "resolved" };
+export type ImpactMeasurement = { kpi: string; baseline: string; target: string; mechanism: string; measurement: string };
 export type Store = {
   id: string;
   name: string;
@@ -37,13 +45,14 @@ export type Store = {
   focus: string;
 };
 
+export type OrderStatus = "Picking" | "Delayed" | "Awaiting store" | "Out for delivery" | "Delivered" | "Actioned" | "Resolved" | "Escalated";
 export type Order = {
   id: string;
   customer: string;
   store: string;
   value: number;
   eta: string;
-  status: string;
+  status: OrderStatus;
   risk: "High" | "Medium" | "Watch";
   reason: string;
   rootCause: string;
@@ -112,7 +121,7 @@ export const orders: Order[] = [
   { id: "NC10451", customer: "Meera Iyer", store: "Green Basket", value: 538, eta: "11:49", status: "Delivered", risk: "Watch", reason: "Post-delivery refund question", rootCause: "Refund status lag", action: "Confirm refund timeline" },
 ];
 
-export const rootCauseNodes = [
+export const rootCauseNodes: RootCauseNode[] = [
   { label: "Customer", value: "Priya Sharma", meta: "4 orders · 18 days inactive", tone: "amber" },
   { label: "Order", value: "#NC10482", meta: "₹612 · cancelled", tone: "coral" },
   { label: "Product", value: "Aashirvaad Atta 5kg", meta: "Unavailable at pick", tone: "amber" },
@@ -123,14 +132,24 @@ export const rootCauseNodes = [
   { label: "Retention risk", value: "HIGH", meta: "Next order at risk", tone: "coral" },
 ];
 
-export const insights = [
+export const insights: AIInsight[] = [
   { id: 1, tag: "RETENTION", title: "Growth is hiding a second-order cliff.", evidence: "New users grew from 82k to 120k, but only 31% place a second order within 30 days; repeat purchase fell from 41% to 27%.", implication: "NOVA CART is paying to refill a leaky funnel instead of building a reliable habit.", action: "Prioritize the first 30 days: detect friction after order one and recover before the next decision." },
   { id: 2, tag: "RELIABILITY", title: "Availability and delivery are one connected problem.", evidence: "35% of cancellations cite product unavailability, 27% cite delivery delay, and 39% of partners say inventory maintenance is too hard.", implication: "Customer pain and partner effort meet at the local inventory layer.", action: "Surface stale inventory and busy-period capacity as operator work, not post-failure support work." },
   { id: 3, tag: "EFFICIENCY", title: "More promotion is not the same as more retention.", evidence: "Promotional spend rose from ₹9.5L to ₹17L while repeat purchase declined; 44% of coupons are never redeemed.", implication: "A 30% budget increase could amplify low-quality acquisition if reliability stays unchanged.", action: "Replace blanket discounts with reliability recovery and measure exposed vs control cohorts." },
 ];
 
-export function calculateRisk(customer: Customer) {
-  const components = [
+export function validateCustomerInput(customer: Customer): void {
+  if (!customer || typeof customer !== "object") throw new Error("Invalid customer record");
+  const numericFields: Array<keyof Pick<Customer, "orders" | "lastOrderDays" | "cancellations" | "deliveryIssues" | "unavailableItems" | "supportIssues" | "aov">> = ["orders", "lastOrderDays", "cancellations", "deliveryIssues", "unavailableItems", "supportIssues", "aov"];
+  for (const field of numericFields) {
+    const value = customer[field];
+    if (!Number.isFinite(value) || value < 0) throw new Error(`Invalid customer field: ${field}`);
+  }
+}
+
+export function calculateRisk(customer: Customer): RiskAssessment {
+  validateCustomerInput(customer);
+  const components: RiskComponent[] = [
     { label: "Recent inactivity", weight: 30, score: Math.min(30, Math.round((customer.lastOrderDays / 21) * 30)), detail: `${customer.lastOrderDays} days since last order` },
     { label: "Cancellation history", weight: 25, score: Math.min(25, customer.cancellations * 13), detail: `${customer.cancellations} cancellation in history` },
     { label: "Delivery problems", weight: 20, score: Math.min(20, customer.deliveryIssues * 20), detail: `${customer.deliveryIssues} delayed delivery signal` },
@@ -138,11 +157,22 @@ export function calculateRisk(customer: Customer) {
     { label: "Support / refund issues", weight: 10, score: Math.min(10, customer.supportIssues * 10), detail: `${customer.supportIssues} support interaction` },
   ];
   const score = Math.min(100, components.reduce((sum, item) => sum + item.score, 0));
-  const level = score >= 70 ? "HIGH" : score >= 45 ? "MEDIUM" : "LOW";
+  const level: RiskBand = score >= 70 ? "HIGH" : score >= 40 ? "MEDIUM" : "LOW";
   return { score, level, components, drivers: components.filter(item => item.score >= item.weight * 0.45).sort((a, b) => b.score - a.score) };
 }
 
-export function scenarioEstimate(input: { promo: number; delivery: number; cancellation: number; inventory: number; retention: number }) {
+export function validateScenarioInput(input: ScenarioInput): void {
+  if (!input || typeof input !== "object") throw new Error("Invalid scenario input");
+  const bounds: Record<keyof ScenarioInput, [number, number]> = { promo: [5, 30], delivery: [20, 50], cancellation: [3, 18], inventory: [50, 100], retention: [15, 50] };
+  for (const key of Object.keys(bounds) as Array<keyof ScenarioInput>) {
+    const value = input[key];
+    const [min, max] = bounds[key];
+    if (!Number.isFinite(value) || value < min || value > max) throw new Error(`Invalid scenario input: ${key}`);
+  }
+}
+
+export function scenarioEstimate(input: ScenarioInput) {
+  validateScenarioInput(input);
   const reliabilityLift = Math.max(0, (input.inventory - 68) * 0.08 + (37 - input.delivery) * 0.55 + (11 - input.cancellation) * 2.1);
   const retentionEstimate = Math.min(44, Math.max(input.retention, input.retention + reliabilityLift * 0.22));
   const supportEstimate = Math.max(3100, Math.round(5900 - (input.inventory - 68) * 19 - (37 - input.delivery) * 48));

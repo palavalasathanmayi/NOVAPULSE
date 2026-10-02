@@ -57,3 +57,7 @@ The final submission layer adds an executive **Start Judge Demo** mode that guid
 ## Final competition upgrade
 
 Start Judge Demo now navigates directly to the Priya Sharma rescue workspace before opening the guided executive investigation. AI Insights now includes an always-visible **AI Rescue Analysis** panel with prototype risk 82/100, HIGH priority, 87% prototype confidence, stale inventory as the primary root cause, four supporting signals, evidence-grounded explanation, a concrete replacement/update/notify/monitor intervention, and repeat purchase plus secondary KPI framing.
+
+## Optimization audit
+
+The optimization pass preserves the existing React/Vite/TypeScript product and adds typed risk, scenario, intervention, root-cause, AI insight, and impact models; explicit runtime validation; shared App-owned rescue state; and client-side risk/validation tests. It also includes accessible labels for the customer search and scenario sliders. Security review found secrets remain server-side through the managed public-config boundary. The repository already contains the managed server-side Google Maps proxy (`server/_core/map.ts`) and Google Maps typings; no browser key is exposed and no new Google integration was necessary for the local-commerce rescue workflow.

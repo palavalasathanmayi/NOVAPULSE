@@ -5,7 +5,8 @@ export type NavKey =
   | "stores"
   | "operations"
   | "insights"
-  | "simulator";
+  | "simulator"
+  | "impact";
 
 export type Customer = {
   id: string;
@@ -113,12 +114,13 @@ export const orders: Order[] = [
 
 export const rootCauseNodes = [
   { label: "Customer", value: "Priya Sharma", meta: "4 orders · 18 days inactive", tone: "amber" },
-  { label: "Order", value: "#NC10482", meta: "₹612 · 1 item unavailable", tone: "coral" },
+  { label: "Order", value: "#NC10482", meta: "₹612 · cancelled", tone: "coral" },
+  { label: "Product", value: "Aashirvaad Atta 5kg", meta: "Unavailable at pick", tone: "amber" },
+  { label: "Inventory", value: "Snapshot stale", meta: "Last updated 2 days ago", tone: "coral" },
   { label: "Store", value: "Local Mart", meta: "Health 61 · MVP Nagar", tone: "coral" },
-  { label: "Product", value: "Aashirvaad Atta 5kg", meta: "High search demand", tone: "amber" },
-  { label: "Inventory", value: "Snapshot stale", meta: "Last update 2 days ago", tone: "coral" },
   { label: "Delivery", value: "ETA breached", meta: "37 min average · +8 min", tone: "coral" },
-  { label: "Support", value: "Refund ticket", meta: "Retention risk created", tone: "amber" },
+  { label: "Support", value: "Refund request", meta: "Ticket opened after failure", tone: "amber" },
+  { label: "Retention risk", value: "HIGH", meta: "Next order at risk", tone: "coral" },
 ];
 
 export const insights = [

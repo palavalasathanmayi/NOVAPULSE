@@ -1,0 +1,10 @@
+[build]
+  # Build the Vite frontend only; the Express server bundle can't run on Netlify.
+  command = "pnpm run build:static"
+  publish = "dist/public"
+
+# Client-side routing (wouter): serve index.html for unknown paths.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -30,6 +30,7 @@ export type AIInsight = { id: number; tag: string; title: string; evidence: stri
 export type ScenarioInput = { promo: number; delivery: number; cancellation: number; inventory: number; retention: number };
 export type Intervention = { id: string; customerId: string; orderId: string; storeId: string; category: string; status: "recommended" | "actioned" | "resolved" };
 export type ImpactMeasurement = { kpi: string; baseline: string; target: string; mechanism: string; measurement: string };
+export type RootCauseKind = "Inventory" | "Delivery" | "Store" | "Support" | "Retention";
 export type Store = {
   id: string;
   name: string;
@@ -123,7 +124,7 @@ export const orders: Order[] = [
 
 export const rootCauseNodes: RootCauseNode[] = [
   { label: "Customer", value: "Priya Sharma", meta: "4 orders · 18 days inactive", tone: "amber" },
-  { label: "Order", value: "#NC10482", meta: "₹612 · cancelled", tone: "coral" },
+  { label: "Order", value: "#NC10482", meta: "₹612 · at risk · 1 item unavailable", tone: "coral" },
   { label: "Product", value: "Aashirvaad Atta 5kg", meta: "Unavailable at pick", tone: "amber" },
   { label: "Inventory", value: "Snapshot stale", meta: "Last updated 2 days ago", tone: "coral" },
   { label: "Store", value: "Local Mart", meta: "Health 61 · MVP Nagar", tone: "coral" },
@@ -150,8 +151,8 @@ export function validateCustomerInput(customer: Customer): void {
 export function calculateRisk(customer: Customer): RiskAssessment {
   validateCustomerInput(customer);
   const components: RiskComponent[] = [
-    { label: "Recent inactivity", weight: 30, score: Math.min(30, Math.round((customer.lastOrderDays / 21) * 30)), detail: `${customer.lastOrderDays} days since last order` },
-    { label: "Cancellation history", weight: 25, score: Math.min(25, customer.cancellations * 13), detail: `${customer.cancellations} cancellation in history` },
+    { label: "Recent inactivity", weight: 30, score: Math.min(30, Math.floor((customer.lastOrderDays / 21) * 30)), detail: `${customer.lastOrderDays} days since last order` },
+    { label: "Cancellation history", weight: 25, score: Math.min(25, customer.cancellations * 12), detail: `${customer.cancellations} cancellation in history` },
     { label: "Delivery problems", weight: 20, score: Math.min(20, customer.deliveryIssues * 20), detail: `${customer.deliveryIssues} delayed delivery signal` },
     { label: "Unavailable products", weight: 15, score: Math.min(15, customer.unavailableItems * 15), detail: `${customer.unavailableItems} availability issue` },
     { label: "Support / refund issues", weight: 10, score: Math.min(10, customer.supportIssues * 10), detail: `${customer.supportIssues} support interaction` },
@@ -169,6 +170,25 @@ export function validateScenarioInput(input: ScenarioInput): void {
     const [min, max] = bounds[key];
     if (!Number.isFinite(value) || value < min || value > max) throw new Error(`Invalid scenario input: ${key}`);
   }
+}
+
+export function applyRecoverySignals(customer: Customer): Customer {
+  validateCustomerInput(customer);
+  return { ...customer, unavailableItems: 0, deliveryIssues: 0, supportIssues: 0, cancellations: 0 };
+}
+
+export function mapRootCause(signal: string): RootCauseKind {
+  const normalized = signal.toLowerCase();
+  if (normalized.includes("product") || normalized.includes("unavail") || normalized.includes("inventory")) return "Inventory";
+  if (normalized.includes("delivery") || normalized.includes("delay")) return "Delivery";
+  if (normalized.includes("store") || normalized.includes("reject")) return "Store";
+  if (normalized.includes("refund") || normalized.includes("support")) return "Support";
+  return "Retention";
+}
+
+export function calculateSyntheticLift(control: number, intervention: number): number {
+  if (![control, intervention].every(value => Number.isFinite(value) && value >= 0 && value <= 100)) throw new Error("Invalid experiment percentage");
+  return Number((intervention - control).toFixed(1));
 }
 
 export function scenarioEstimate(input: ScenarioInput) {
